@@ -57,8 +57,47 @@ class ViewController: UIViewController {
                                                     onError: {print("Error is \($0)")},
                                                     onCompleted: {print("observable sequence Completed")},
                                                     onDisposed: {print("observable sequesnce Disposed")})
+        
+        
+        // ConcurrentScheduler:
+        
+        let disposeBagSecond = DisposeBag()
+        let imageView = UIImageView()
+        let imageData = PublishSubject<Data>()
+        let concurrentScheduler = ConcurrentDispatchQueueScheduler(qos: .background)
+        imageData.observe(on: concurrentScheduler)
+            .map { UIImage(data: $0) }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { imageView.image = $0 })
+            .disposed(by: disposeBagSecond)
+        
+        // SerialScheduler:
+        
+        let conQueue = DispatchQueue(label: "com.concurrentQueue", attributes: .concurrent)
+        let serScheduler = SerialDispatchQueueScheduler(queue: conQueue, internalSerialQueueName: "com.SerialQueue")
+        
+        imageData.observe(on: serScheduler)
+            .map { UIImage(data: $0) }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: {imageView.image = $0} )
+            .disposed(by: disposeBagSecond)
+        
+        // OperationQueueScheduler:
+        
+        let oprQueue = OperationQueue()
+        let oprQueueScheduler = OperationQueueScheduler(operationQueue: oprQueue)
+        
+        imageData.observe(on: oprQueueScheduler)
+            .map { UIImage(data: $0) }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: {imageView.image = $0} )
+            .disposed(by: disposeBagSecond)
+        
     }
 
+    
+    
+    
 
 }
 
